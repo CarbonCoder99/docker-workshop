@@ -58,7 +58,7 @@ def ingest_data(
     first_chunk.to_sql(
         name=target_table,
         con=engine,
-        if_exists="append"
+        if_exists="replace"
     )
 
     print(f"Inserted first chunk: {len(first_chunk)}")
@@ -67,7 +67,7 @@ def ingest_data(
         df_chunk.to_sql(
             name=target_table,
             con=engine,
-            if_exists="replace"
+            if_exists="append"
         )
         print(f"Inserted chunk: {len(df_chunk)}")
 
