@@ -2,8 +2,9 @@
 # coding: utf-8
 
 import pandas as pd
-from sqlalchemy import create_engine
-from tqdm.auto import tqdm
+from sqlalchemy import create_engine # type: ignore
+from tqdm.auto import tqdm # type: ignore
+import click # type: ignore
 
 dtype = {
     "VendorID": "Int64",
@@ -35,21 +36,21 @@ def ingest_data(
         engine,
         target_table: str,
         chunksize: int = 100000,
-) -> pd.DataFrame:
+) -> pd.DataFrame: # type: ignore
     df_iter = pd.read_csv(
         url,
-        dtype=dtype,
+        dtype=dtype, # type: ignore
         parse_dates=parse_dates,
         iterator=True,
         chunksize=chunksize
-    )
+    ) # pyright: ignore[reportCallIssue]
 
     first_chunk = next(df_iter)
 
     first_chunk.head(0).to_sql(
         name=target_table,
         con=engine,
-        if_exists="replace"
+        if_exists="append"
     )
 
     print(f"Table {target_table} created")
@@ -66,23 +67,33 @@ def ingest_data(
         df_chunk.to_sql(
             name=target_table,
             con=engine,
-            if_exists="append"
+            if_exists="replace"
         )
         print(f"Inserted chunk: {len(df_chunk)}")
 
     print(f'done ingesting to {target_table}')
 
-def main():
-    pg_user = 'root'
-    pg_pass = 'root'
-    pg_host = 'localhost'
-    pg_port = '5432'
-    pg_db = 'ny_taxi'
-    year = 2021
-    month = 1
-    chunksize = 100000
-    target_table = 'yellow_taxi_data'
-
+@click.command()
+@click.option('--pg_user', default='root', help='Postgres user name.')
+@click.option('--pg_pass', default='root', help='Postgres password.')
+@click.option('--pg_host', default='localhost', help='Postgres host.')
+@click.option('--pg_port', default=5432, type=int, help='Postgres port.')
+@click.option('--pg_db', default='ny_taxi', help='Postgres database name.')
+@click.option('--year', default=2021, type=int, help='Year of the taxi data file.')
+@click.option('--month', default=1, type=int, help='Month of the taxi data file.')
+@click.option('--chunksize', default=100000, type=int, help='Number of rows to process per chunk.')
+@click.option('--target_table', default='yellow_taxi_data', help='Target table name in Postgres.')
+def main(
+    pg_user: str,
+    pg_pass: str,
+    pg_host: str,
+    pg_port: int,
+    pg_db: str,
+    year: int,
+    month: int,
+    chunksize: int,
+    target_table: str,
+):
     engine = create_engine(f'postgresql://{pg_user}:{pg_pass}@{pg_host}:{pg_port}/{pg_db}')
     url_prefix = 'https://github.com/DataTalksClub/nyc-tlc-data/releases/download/yellow'
 
@@ -96,4 +107,4 @@ def main():
     )
 
 if __name__ == '__main__':
-    main()
+    main() # type: ignore
